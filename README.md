@@ -121,7 +121,7 @@ Implementation of GELU, LoRA, RoPE and MoE based on microGPT
     - RoPE enhances positional encoding by using rotation
     
     The successful implementation and observable differences in model outputs confirm that both modifications are correctly integrated into the microGPT model.
-## LoRA (Low-Rank Adaptation)
+## 3. LoRA (Low-Rank Adaptation)
 
         LoRA is a parameter-efficient fine-tuning method that reduces the number of trainable parameters in a model.
         
