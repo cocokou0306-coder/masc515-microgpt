@@ -176,3 +176,44 @@ Implementation of GELU, LoRA, RoPE and MoE based on microGPT
         ### Conclusion
         
         LoRA enables efficient parameter adaptation while maintaining model performance. The successful integration demonstrates its effectiveness in reducing parameter complexity while preserving learning capability.
+## 4. Mixture of Experts (MoE)
+
+        MoE is a technique that uses multiple “expert” networks instead of a single network.
+        
+        ### What is MoE?
+        
+        Instead of using one feed-forward network, MoE introduces multiple experts. A gating mechanism selects which expert to use for each input.
+        
+        ---
+        
+        ### Why use MoE?
+        
+        - Increases model capacity
+        - Improves efficiency
+        - Allows specialization of different experts
+        
+        ---
+        
+        ### Implementation
+        
+        We modified the MLP block:
+        
+        - Replaced a single MLP with two expert networks
+        - Added a simple gating mechanism based on input values
+        - Selected one expert dynamically during execution
+        
+        ---
+        
+        ### Observed Changes
+        
+        - Model still trains successfully
+        - Loss changes slightly
+        - Generated outputs differ from previous versions
+        
+        This shows that the model behavior is influenced by different experts.
+        
+        ---
+        
+        ### Conclusion
+        
+        MoE increases model flexibility by allowing multiple specialized sub-networks. The successful integration demonstrates its effect on model behavior.
