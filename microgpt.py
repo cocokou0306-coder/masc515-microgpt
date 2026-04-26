@@ -89,6 +89,12 @@ for i in range(n_layer):
     state_dict[f'layer{i}.attn_wo'] = matrix(n_embd, n_embd)
     state_dict[f'layer{i}.mlp_fc1'] = matrix(4 * n_embd, n_embd)
     state_dict[f'layer{i}.mlp_fc2'] = matrix(n_embd, 4 * n_embd)
+    # ✅ MoE experts
+    state_dict[f'layer{i}.expert1_fc1'] = matrix(4 * n_embd, n_embd)
+    state_dict[f'layer{i}.expert1_fc2'] = matrix(n_embd, 4 * n_embd)
+
+    state_dict[f'layer{i}.expert2_fc1'] = matrix(4 * n_embd, n_embd)
+    state_dict[f'layer{i}.expert2_fc2'] = matrix(n_embd, 4 * n_embd)
     lora_rank = 4
 
     state_dict[f'layer{i}.lora_A'] = matrix(n_embd, lora_rank)
@@ -167,11 +173,24 @@ def gpt(token_id, pos_id, keys, values):
         # 2) MLP block
         x_residual = x
         x = rmsnorm(x)
-        x = linear(x, state_dict[f'layer{li}.mlp_fc1'])
-        x = [xi.gelu() for xi in x]
-        x = linear(x, state_dict[f'layer{li}.mlp_fc2'])
-        x = [a + b for a, b in zip(x, x_residual)]
+      
 
+        gate = sum(xi.data for xi in x) / len(x)
+
+    if gate > 0:
+        # expert 1
+        x = linear(x, state_dict[f'layer{li}.expert1_fc1'])
+        x = [xi.gelu() for xi in x]
+        x = linear(x, state_dict[f'layer{li}.expert1_fc2'])
+    else:
+        # expert 2
+        x = linear(x, state_dict[f'layer{li}.expert2_fc1'])
+        x = [xi.gelu() for xi in x]
+        x = linear(x, state_dict[f'layer{li}.expert2_fc2'])
+
+    x = [a + b for a, b in zip(x, x_residual)]
+      
+        
     logits = linear(x, state_dict['lm_head'])
     return logits
 
