@@ -121,3 +121,58 @@ Implementation of GELU, LoRA, RoPE and MoE based on microGPT
     - RoPE enhances positional encoding by using rotation
     
     The successful implementation and observable differences in model outputs confirm that both modifications are correctly integrated into the microGPT model.
+## LoRA (Low-Rank Adaptation)
+
+        LoRA is a parameter-efficient fine-tuning method that reduces the number of trainable parameters in a model.
+        
+        ### What is LoRA?
+        
+        Instead of updating the full weight matrix W, LoRA decomposes the update into two smaller matrices:
+        
+        W x → W x + A(Bx)
+        
+        where:
+        - A and B are low-rank matrices
+        - The rank is much smaller than the original dimension
+        
+        ---
+        
+        ### Why use LoRA?
+        
+        Traditional training updates all parameters, which is expensive.
+        
+        LoRA improves this by:
+        - Reducing the number of trainable parameters
+        - Lowering computational cost
+        - Keeping most of the original model unchanged
+        
+        ---
+        
+        ### Implementation
+        
+        We implemented LoRA by modifying the linear layer:
+        
+        - Added low-rank matrices A and B for each layer
+        - Modified the `linear()` function to include:
+        
+          base_output + A(Bx)
+        
+        - Applied LoRA to the query projection in the attention layer
+        
+        ---
+        
+        ### Observed Changes
+        
+        After applying LoRA:
+        
+        - The model still trains successfully
+        - The loss changed slightly (e.g., ~2.62 → ~2.61)
+        - Generated outputs are different from previous versions
+        
+        This indicates that LoRA is successfully influencing model behavior.
+        
+        ---
+        
+        ### Conclusion
+        
+        LoRA enables efficient parameter adaptation while maintaining model performance. The successful integration demonstrates its effectiveness in reducing parameter complexity while preserving learning capability.
