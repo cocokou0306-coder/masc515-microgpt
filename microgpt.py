@@ -108,10 +108,20 @@ def rmsnorm(x):
     scale = (ms + 1e-5) ** -0.5
     return [xi * scale for xi in x]
 
+def apply_rope(x, pos):
+    # simple rotary encoding
+    out = []
+    for i, xi in enumerate(x):
+        angle = pos / (10000 ** (2 * (i // 2) / len(x)))
+        if i % 2 == 0:
+            out.append(xi * math.cos(angle))
+        else:
+            out.append(xi * math.sin(angle))
+    return out
+
 def gpt(token_id, pos_id, keys, values):
-    tok_emb = state_dict['wte'][token_id] # token embedding
-    pos_emb = state_dict['wpe'][pos_id] # position embedding
-    x = [t + p for t, p in zip(tok_emb, pos_emb)] # joint token and position embedding
+    tok_emb = state_dict['wte'][token_id]
+    x = apply_rope(tok_emb, pos_id)
     x = rmsnorm(x) # note: not redundant due to backward pass via the residual connection
 
     for li in range(n_layer):
