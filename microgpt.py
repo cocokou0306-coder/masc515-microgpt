@@ -89,14 +89,28 @@ for i in range(n_layer):
     state_dict[f'layer{i}.attn_wo'] = matrix(n_embd, n_embd)
     state_dict[f'layer{i}.mlp_fc1'] = matrix(4 * n_embd, n_embd)
     state_dict[f'layer{i}.mlp_fc2'] = matrix(n_embd, 4 * n_embd)
+    lora_rank = 4
+
+    state_dict[f'layer{i}.lora_A'] = matrix(n_embd, lora_rank)
+    state_dict[f'layer{i}.lora_B'] = matrix(lora_rank, n_embd)
+
 params = [p for mat in state_dict.values() for row in mat for p in row] # flatten params into a single list[Value]
 print(f"num params: {len(params)}")
 
 # Define the model architecture: a function mapping tokens and parameters to logits over what comes next
 # Follow GPT-2, blessed among the GPTs, with minor differences: layernorm -> rmsnorm, no biases, GeLU -> Gelu
-def linear(x, w):
-    return [sum(wi * xi for wi, xi in zip(wo, x)) for wo in w]
 
+def linear(x, w, lora_A=None, lora_B=None):
+    base = [sum(wi * xi for wi, xi in zip(wo, x)) for wo in w]
+
+    if lora_A is not None and lora_B is not None:
+        # Bx
+        lora_intermediate = [sum(bi * xi for bi, xi in zip(row, x)) for row in lora_B]
+        # A(Bx)
+        lora_out = [sum(ai * li for ai, li in zip(row, lora_intermediate)) for row in lora_A]
+        base = [b + l for b, l in zip(base, lora_out)]
+
+    return base
 def softmax(logits):
     max_val = max(val.data for val in logits)
     exps = [(val - max_val).exp() for val in logits]
@@ -128,7 +142,12 @@ def gpt(token_id, pos_id, keys, values):
         # 1) Multi-head Attention block
         x_residual = x
         x = rmsnorm(x)
-        q = linear(x, state_dict[f'layer{li}.attn_wq'])
+        q = linear(
+                x,
+                state_dict[f'layer{li}.attn_wq'],
+                state_dict[f'layer{li}.lora_A'],
+                state_dict[f'layer{li}.lora_B']
+            )
         k = linear(x, state_dict[f'layer{li}.attn_wk'])
         v = linear(x, state_dict[f'layer{li}.attn_wv'])
         keys[li].append(k)
